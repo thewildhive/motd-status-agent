@@ -1,0 +1,11 @@
+{
+  "protocol_version": 1,
+  "observed_at": "2026-08-18T12:34:56.123456789Z",
+  "workloads": [
+    {"name": "a", "state": "running", "health": "healthy"},
+    {"name": "b", "state": "running", "health": "none"},
+    {"name": "c", "state": "running", "health": "starting"},
+    {"name": "d", "state": "stopped", "health": "none"},
+    {"name": "e", "state": "failed", "health": "unknown"}
+  ]
+}

@@ -1,0 +1,75 @@
+name: Publish Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing vMAJOR.MINOR.PATCH release tag to publish or recover
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-${{ github.event.release.tag_name || inputs.tag || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish signed assets
+    if: github.repository == 'thewildhive/motd-status-agent'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - name: Validate release context
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+            echo "::error::Not a stable SemVer tag: $RELEASE_TAG"
+            exit 1
+          }
+          actual_tag="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json tagName,isDraft --jq 'select(.isDraft == false) | .tagName')"
+          [[ "$actual_tag" == "$RELEASE_TAG" ]]
+      - name: Check out immutable release tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify tag belongs to main
+        shell: bash
+        run: |
+          git tag --points-at HEAD | grep -Fx "$RELEASE_TAG"
+          git merge-base --is-ancestor HEAD origin/main
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Build, sign, and verify release assets
+        env:
+          SIGNING_PRIVATE_KEY: ${{ secrets.SIGNING_PRIVATE_KEY }}
+        shell: bash
+        run: |
+          [[ -n "$SIGNING_PRIVATE_KEY" ]] || {
+            echo '::error::SIGNING_PRIVATE_KEY is required'
+            exit 1
+          }
+          key_file="$(mktemp)"
+          trap 'rm -f "$key_file"' EXIT
+          chmod 600 "$key_file"
+          printf '%s' "$SIGNING_PRIVATE_KEY" > "$key_file"
+          SIGNING_KEY_FILE="$key_file" .github/scripts/package-release.sh "${RELEASE_TAG#v}" dist
+      - name: Upload missing assets and verify existing assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: .github/scripts/upload-release-assets.sh "$RELEASE_TAG" dist
