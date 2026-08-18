@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"motd-status-agent/internal/protocol"
 )
@@ -46,6 +47,41 @@ func TestDefinitionsMissingDirectoryIsEmptySuccess(t *testing.T) {
 	definitions, err := (Collector{UnitDir: filepath.Join(t.TempDir(), "missing")}).definitions()
 	if err != nil || definitions == nil || len(definitions) != 0 {
 		t.Fatalf("expected empty definitions, got %+v, %v", definitions, err)
+	}
+}
+
+func TestCollectInspectsWorkloadsConcurrently(t *testing.T) {
+	directory := t.TempDir()
+	for _, name := range []string{"alpha.container", "beta.container", "gamma.container", "delta.container"} {
+		if err := os.WriteFile(filepath.Join(directory, name), []byte("[Container]\n"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	systemctl := filepath.Join(directory, "systemctl")
+	if err := os.WriteFile(systemctl, []byte("#!/bin/sh\nsleep 0.1\nprintf 'ActiveState=active\\nResult=success\\n'\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	podman := filepath.Join(directory, "podman")
+	if err := os.WriteFile(podman, []byte("#!/bin/sh\nsleep 0.1\nprintf 'running\\t0\\t\\n'\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+
+	start := time.Now()
+	workloads, err := (Collector{UnitDir: directory, Systemctl: systemctl, Podman: podman}).Collect(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if elapsed := time.Since(start); elapsed >= 500*time.Millisecond {
+		t.Fatalf("collection was not concurrent: took %s", elapsed)
+	}
+	if len(workloads) != 4 {
+		t.Fatalf("expected four workloads, got %d", len(workloads))
+	}
+	for _, workload := range workloads {
+		if workload.State != protocol.StateRunning {
+			t.Fatalf("expected running workload, got %+v", workload)
+		}
 	}
 }
 
