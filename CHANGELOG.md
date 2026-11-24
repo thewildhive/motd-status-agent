@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/thewildhive/motd-status-agent/compare/v0.3.1...v0.4.0) (2026-11-24)
+
+
+### Features
+
+* release the opt-in daily drive health collector ([#8](https://github.com/thewildhive/motd-status-agent/issues/8)) ([b73a34e](https://github.com/thewildhive/motd-status-agent/commit/b73a34e9c0a8b26dc4f43e8d022fe80dad430e6d))
+
 ## [0.3.1](https://github.com/thewildhive/motd-status-agent/compare/v0.3.0...v0.3.1) (2026-11-24)
 
 
