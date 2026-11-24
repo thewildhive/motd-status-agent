@@ -39,7 +39,7 @@ check: check-workflows
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build $(GO_BUILD_FLAGS) -o /tmp/motd-status-agent-amd64-check ./cmd/motd-status-agent
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 $(GO) build $(GO_BUILD_FLAGS) -o /tmp/motd-status-agent-arm64-check ./cmd/motd-status-agent
 	$(GO) build $(GO_BUILD_FLAGS) -o /tmp/motd-status-agent-vulncheck ./cmd/motd-status-agent
-	$(GO) run golang.org/x/vuln/cmd/govulncheck@v1.6.0 -mode=binary /tmp/motd-status-agent-vulncheck
+	$(GO) run golang.org/x/vuln/cmd/govulncheck@v1.10.0 -mode=binary /tmp/motd-status-agent-vulncheck
 
 check-workflows:
 	$(GO) run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12

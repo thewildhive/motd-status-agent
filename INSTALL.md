@@ -76,7 +76,7 @@ The checksum manifest verifies artifact integrity. Signature verification requir
 
 ## Build From Source
 
-Use Go `1.25.13` or a newer supported Go release, as declared by `go.mod`:
+Use Go `1.27.4` or a newer supported Go release, as declared by `go.mod`:
 
 ```sh
 git clone https://github.com/thewildhive/motd-status-agent.git

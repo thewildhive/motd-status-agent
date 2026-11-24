@@ -37,7 +37,7 @@ Relevant current files are:
 
 - Add a small `Makefile` or equivalently documented scripts with authoritative targets for formatting/module checks, vet, unit/race tests, vulnerability analysis, workflow validation, Linux cross-builds, compatibility integration, and release packaging.
 - Ensure local targets and GitHub Actions invoke the same scripts or commands so CI does not define an unrepeatable second build process.
-- Build release commands from `./cmd/motd-status-agent`, with `CGO_ENABLED=0`, `GOOS=linux`, and the selected `GOARCH`, using the patched Go `1.25.13` baseline or newer. Use `-buildvcs=false` and release linker flags for version metadata and stripped output.
+- Build release commands from `./cmd/motd-status-agent`, with `CGO_ENABLED=0`, `GOOS=linux`, and the selected `GOARCH`, using the patched Go `1.27.4` baseline or newer. Use `-buildvcs=false` and release linker flags for version metadata and stripped output.
 
 ### CI Workflow
 

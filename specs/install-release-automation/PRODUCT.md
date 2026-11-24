@@ -38,7 +38,7 @@ For installation and service lifecycle behavior, this focused specification supe
 
 4. The release installation path provides architecture-specific commands that download the latest Linux binary and checksum manifest from the project’s GitHub Release, verify the selected binary against the manifest, and install it at a stable system path. Download or checksum failure stops installation before replacing a working binary.
 
-5. A source installation path states the required Go version, currently Go `1.25.13` or newer, builds `./cmd/motd-status-agent`, and installs the resulting binary at the same stable path used by release installation. Source installation does not imply that uncommitted or unverified builds are equivalent to signed release artifacts.
+5. A source installation path states the required Go version, currently Go `1.27.4` or newer, builds `./cmd/motd-status-agent`, and installs the resulting binary at the same stable path used by release installation. Source installation does not imply that uncommitted or unverified builds are equivalent to signed release artifacts.
 
 6. Before service installation, the guide tells the operator how to determine and record:
    - The workload owner’s username, UID, primary group, home directory, and user runtime directory.

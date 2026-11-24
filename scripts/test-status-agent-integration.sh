@@ -2,7 +2,7 @@
 set -euo pipefail
 
 agent_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-go_motd_revision="${GO_MOTD_REVISION:-e10242630cdd1a7bf75bdc0aced3be94959306f5}"
+go_motd_revision="${GO_MOTD_REVISION:-278f9308158ae8cbc82b3155079753252360510c}"
 tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/motd-status-integration.XXXXXX")"
 trap 'rm -rf "$tmp_dir"' EXIT
 
