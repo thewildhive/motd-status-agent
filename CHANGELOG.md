@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/thewildhive/motd-status-agent/compare/v0.3.0...v0.3.1) (2026-11-24)
+
+
+### Bug Fixes
+
+* remove unbounded Quadlet inspection fan-out ([#6](https://github.com/thewildhive/motd-status-agent/issues/6)) ([6f7285e](https://github.com/thewildhive/motd-status-agent/commit/6f7285e653f83f6a8f4d4359704927c00a71b182))
+
 ## [0.3.0](https://github.com/thewildhive/motd-status-agent/compare/v0.2.0...v0.3.0) (2026-08-18)
 
 
