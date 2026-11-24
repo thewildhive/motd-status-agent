@@ -27,11 +27,11 @@ Rootless Podman workloads belong to one user's runtime and user systemd manager.
 
 ## Behavior
 
-1. The agent runs as a user systemd service under the same unprivileged account that owns the rootless Podman workloads it reports. It never requires execution as root during normal operation.
+1. The agent runs as a system-level systemd service under the same unprivileged account that owns the rootless Podman workloads it reports. It never requires execution as root during normal operation.
 
 2. Installation may require an administrator to create a dedicated local access group and establish socket-directory permissions, but it does not grant consumers membership in the workload owner's account or access to the owner's Podman socket.
 
-3. The setup flow allows an administrator or workload owner to choose:
+3. The setup flow allows an administrator to choose:
    - The account under which the agent runs.
    - The dedicated local group whose members may query status.
    - The absolute Unix socket path.
@@ -39,9 +39,9 @@ Rootless Podman workloads belong to one user's runtime and user systemd manager.
 
    The offered defaults are `/var/run/motd-status/agent.sock` and a dedicated `motd-status` group. Operators may select an existing group such as `media` instead.
 
-4. The documented default setup enables linger for a dedicated non-interactive workload account so status remains available and Quadlet workloads remain managed after logout. If the operator declines linger, setup clearly states that the service and socket may disappear when the user's final session ends.
+4. The documented default setup enables linger for a dedicated non-interactive workload account so status remains available and Quadlet workloads remain managed after logout. If the operator declines linger, setup clearly states that the user manager and Quadlet workloads may stop when the user's final session ends.
 
-5. Installation provides a user systemd service that can be enabled and started using normal user-service management. A successful installation leaves the service enabled, running, and queryable at the configured socket.
+5. Installation provides a system-level systemd service that can be enabled and started using system-level service management. A successful installation leaves the service enabled, running, and queryable at the configured socket.
 
 6. Setup verifies that Podman and the user's systemd manager are available before reporting success. Missing prerequisites produce actionable errors and do not leave a falsely successful or partially enabled service.
 
@@ -122,7 +122,7 @@ Rootless Podman workloads belong to one user's runtime and user systemd manager.
 
 38. A failed upgrade leaves either the previously working version active or the service stopped with an actionable error. It does not silently leave a new binary running with an incompatible service definition or protocol.
 
-39. Uninstall disables and stops the user service, removes agent-owned service files and socket entries, and explains whether administrator-created group membership or linger remains configured. It does not remove Podman, Quadlet files, containers, images, volumes, or unrelated user services.
+39. Uninstall disables and stops the system service, removes agent-owned service files and socket entries, and explains whether administrator-created group membership or linger remains configured. It does not remove Podman, Quadlet files, containers, images, volumes, or unrelated user services.
 
 40. Uninstall does not automatically delete a shared access group, remove users from that group, or disable linger unless the operator explicitly requests those system-level changes and is shown their effects.
 

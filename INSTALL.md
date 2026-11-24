@@ -231,13 +231,3 @@ sudo systemctl daemon-reload
 ```
 
 Uninstall preserves Quadlets, containers, images, volumes, Podman configuration, the access group, group membership, linger, and `go-motd` configuration. Remove those separately only when intentionally decommissioning the workload.
-
-## Development Checks
-
-```sh
-make check
-make test-status-agent-integration
-make cross-compile
-```
-
-See the GitHub Actions workflows for the required pull-request gates and release process.
