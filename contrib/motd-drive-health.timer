@@ -1,0 +1,9 @@
+[Unit]
+Description=Collect drive health daily
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=timers.target

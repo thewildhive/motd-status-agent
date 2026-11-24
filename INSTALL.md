@@ -231,3 +231,17 @@ sudo systemctl daemon-reload
 ```
 
 Uninstall preserves Quadlets, containers, images, volumes, Podman configuration, the access group, group membership, linger, and `go-motd` configuration. Remove those separately only when intentionally decommissioning the workload.
+
+## Optional Daily Drive Health
+
+The regular agent installer does not install or enable this collector. Verify the release's signed `checksums.txt` as above, then verify the `motd-drive-health-linux-ARCH`, `motd-drive-health.service`, and `motd-drive-health.timer` assets against it. Install the architecture-specific binary as `/usr/local/bin/motd-drive-health` (mode `0755`) and the units in `/etc/systemd/system/` (mode `0644`), owned by root. Install smartmontools 7.3 or newer at `/usr/sbin/smartctl`.
+
+Create a root-owned, non-group-writable `/etc/motd-drive-health/config.json`:
+
+```json
+{"drives":[{"id":"ata-MODEL_SERIAL","label":"Archive","kind":"ata"},{"id":"nvme-MODEL_SERIAL_1","label":"Cache","kind":"nvme"}]}
+```
+
+Use whole-drive basenames from `/dev/disk/by-id/`, at most one namespace per NVMe controller, and unique labels of 1–32 printable ASCII characters. See the [drive health spec](specs/daily-drive-health/TECH.md) for supported identifiers. Do not enroll drives already polled by `smartd` or another monitor. This collector does not send alerts.
+
+Run `sudo systemctl daemon-reload` and `sudo systemctl start motd-drive-health.service`. Check `/var/lib/motd-drive-health/status.json` and the service journal before enabling the daily timer with `sudo systemctl enable --now motd-drive-health.timer`. Enable `system.drive_health: true` in `go-motd` separately. The probe reads telemetry only; the collector writes its local snapshot, not drive settings.

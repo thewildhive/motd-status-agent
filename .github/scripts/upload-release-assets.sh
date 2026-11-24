@@ -8,7 +8,8 @@ if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ || ! -d "$asset_dir" ]]; then
   exit 2
 fi
 mapfile -t assets < <(find "$asset_dir" -maxdepth 1 -type f -printf '%f\n' | sort)
-expected=(checksums.txt checksums.txt.sig motd-status-agent-linux-amd64 motd-status-agent-linux-arm64)
+expected=(checksums.txt checksums.txt.sig motd-drive-health-linux-amd64 motd-drive-health-linux-arm64
+  motd-drive-health.service motd-drive-health.timer motd-status-agent-linux-amd64 motd-status-agent-linux-arm64)
 if [[ "${assets[*]}" != "${expected[*]}" ]]; then
   printf 'unexpected release asset set:\n%s\n' "${assets[*]}" >&2
   exit 1
