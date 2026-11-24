@@ -38,7 +38,7 @@ For installation and service lifecycle behavior, this focused specification supe
 
 4. The release installation path provides architecture-specific commands that download the latest Linux binary and checksum manifest from the project’s GitHub Release, verify the selected binary against the manifest, and install it at a stable system path. Download or checksum failure stops installation before replacing a working binary.
 
-5. A source installation path states the required Go version, currently Go `1.25.13` or newer, builds `./cmd/motd-status-agent`, and installs the resulting binary at the same stable path used by release installation. Source installation does not imply that uncommitted or unverified builds are equivalent to signed release artifacts.
+5. A source installation path states the required Go version, currently Go `1.27.4` or newer, builds `./cmd/motd-status-agent`, and installs the resulting binary at the same stable path used by release installation. Source installation does not imply that uncommitted or unverified builds are equivalent to signed release artifacts.
 
 6. Before service installation, the guide tells the operator how to determine and record:
    - The workload owner’s username, UID, primary group, home directory, and user runtime directory.
@@ -100,19 +100,11 @@ For installation and service lifecycle behavior, this focused specification supe
 
 25. A required quality gate rejects unformatted Go, module files changed by `go mod tidy`, failed module verification, `go vet` findings, invalid workflow syntax, invalid release shell scripts, broken internal Markdown links, and non-Conventional pull request titles.
 
-26. A required test gate runs the complete Go test suite with the race detector and publishes a human-readable coverage summary. Tests do not require access to production Podman workloads or a persistent host socket.
-
 27. A required build matrix compiles every shipped target: Linux amd64 and Linux arm64. Unsupported operating systems are not presented as release targets merely because Go can cross-compile them.
 
 28. A required vulnerability gate analyzes the built agent with a pinned `govulncheck` version. Pull requests also receive dependency review for newly introduced dependencies of moderate or greater known severity when GitHub supports the check.
 
-29. A single stable required-check job fails when any applicable CI gate fails and treats intentionally skipped event-specific gates as acceptable. Branch protection can therefore require one consistently named result.
-
-30. The agent-owned protocol fixture and server tests run in CI. Cross-repository `go-motd` compatibility is also gated using an explicit, reproducible `go-motd` revision rather than whatever happens to be present in a sibling checkout.
-
-31. Cross-repository testing exercises the actual Unix-socket HTTP boundary and verifies protocol decoding, aggregate online counts, JSON workload details, aggregate-only terminal output, and omission when the agent becomes unavailable. It does not require root, systemd, Podman, or a permanent socket.
-
-32. A failure to fetch the pinned `go-motd` compatibility revision is a failed compatibility check, not a silent skip. Updating that revision is a reviewable repository change.
+29. The stable `Required` job aggregates applicable CI gates. Protected `main` also requires `CodeQL`.
 
 ### Releases
 

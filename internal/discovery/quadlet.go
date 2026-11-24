@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"sync"
 
 	"motd-status-agent/internal/protocol"
 )
@@ -36,21 +35,18 @@ func (c Collector) Collect(ctx context.Context) ([]protocol.Workload, error) {
 	if _, err := exec.LookPath(c.Podman); err != nil {
 		return nil, ErrRuntimeUnavailable
 	}
-	var inspections sync.WaitGroup
 	for i := range definitions {
-		inspections.Add(1)
-		go func(index int) {
-			defer inspections.Done()
-			members, inspectErr := c.inspect(ctx, definitions[index])
-			if inspectErr != nil {
-				// Enumeration succeeded, so retain the workload instead of hiding it.
-				definitions[index].Members = []Member{{Name: definitions[index].Name, State: protocol.StateUnknown, Health: protocol.HealthUnknown}}
-				return
-			}
-			definitions[index].Members = members
-		}(i)
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		members, inspectErr := c.inspect(ctx, definitions[i])
+		if inspectErr != nil {
+			// Enumeration succeeded, so retain the workload instead of hiding it.
+			definitions[i].Members = []Member{{Name: definitions[i].Name, State: protocol.StateUnknown, Health: protocol.HealthUnknown}}
+			continue
+		}
+		definitions[i].Members = members
 	}
-	inspections.Wait()
 	result := make([]protocol.Workload, 0, len(definitions))
 	for _, definition := range definitions {
 		result = append(result, Normalize(definition))
@@ -193,18 +189,13 @@ func (c Collector) inspect(ctx context.Context, definition Definition) ([]Member
 		}
 	}
 	if definition.Kind == "pod" && len(definition.Members) > 0 {
-		members := make([]Member, len(definition.Members))
-		copy(members, definition.Members)
-		var inspections sync.WaitGroup
-		for i := range members {
-			inspections.Add(1)
-			go func(index int) {
-				defer inspections.Done()
-				members[index] = c.inspectMember(ctx, members[index], unitState)
-			}(i)
+		for i := range definition.Members {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+			definition.Members[i] = c.inspectMember(ctx, definition.Members[i], unitState)
 		}
-		inspections.Wait()
-		return members, nil
+		return definition.Members, nil
 	}
 	member := Member{Name: definition.Name, Health: protocol.HealthNone}
 	if len(definition.Members) == 1 {

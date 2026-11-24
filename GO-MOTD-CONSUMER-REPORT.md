@@ -161,7 +161,7 @@ error condition.
 
 The list is already sorted by stable workload name. The consumer should not
 depend on the order for counting, but preserving the order is useful for
-diagnostics and deterministic tests.
+diagnostics.
 
 ## Error Responses
 
@@ -231,51 +231,12 @@ environment values, labels, mounts, secrets, or other runtime details.
 The consumer may display the name, but should not assume it is a Podman
 container name or reconstruct Podman commands from it.
 
-## Compatibility Fixtures
+## Canonical Fixture
 
-The agent and `go-motd` should share equivalent v1 fixtures for at least these
-responses:
-
-1. Empty successful workload list.
-2. One running healthy workload.
-3. One running workload with `none` health.
-4. Running unhealthy workload.
-5. Running starting workload.
-6. Failed workload with unknown health.
-7. Stopped workload.
-8. Unknown workload state and health.
-9. Multiple workloads in non-sorted input order, verifying deterministic
-   output and count derivation.
-10. Each stable error code, especially `runtime_unavailable`,
-    `permission_denied`, and `collection_timeout`.
-11. Additive unknown JSON fields, verifying v1 decoding remains compatible.
-12. Unsupported protocol version, verifying a clear compatibility failure.
-
-The success fixture should preserve these exact field names:
-
-```json
-{
-  "protocol_version": 1,
-  "observed_at": "2026-08-18T12:34:56.123456789Z",
-  "workloads": [
-    {"name":"alpha","state":"running","health":"healthy"},
-    {"name":"beta","state":"stopped","health":"none"}
-  ]
-}
-```
-
-The consumer should compare semantic JSON fields rather than requiring
-whitespace or object formatting to match. `observed_at` is RFC 3339 UTC with
-nanosecond-capable formatting and should be parsed as a timestamp.
+See [`testdata/v1/status.json`](testdata/v1/status.json) for a representative v1 payload. Decode JSON semantically; whitespace and object key order are not part of the contract.
 
 ## Current Implementation Caveats
 
-These items are relevant to integration testing and should not be mistaken
-for consumer requirements:
-
-- The current implementation uses the configured Quadlet directory and
-  systemd/Podman command adapters, but full real-user systemd and Podman
-  lifecycle integration tests are still outstanding.
 - The current server configures an 8 KiB HTTP header limit and rejects invalid
   request shapes, but a dedicated front-end is still needed to guarantee the
   full request line plus headers plus body limit for every malformed framing
@@ -290,29 +251,3 @@ for consumer requirements:
 
 None of these caveats change the v1 count rule or the normalized workload
 field meanings.
-
-## Recommended Consumer Test
-
-Add an end-to-end test using a fake Unix socket server or a real temporary Unix
-socket. The test should issue `GET /v1/status`, decode the response, verify
-protocol version and enum values, then assert:
-
-```text
-online == 2
-total == 5
-```
-
-for this workload set:
-
-```json
-[
-  {"name":"a","state":"running","health":"healthy"},
-  {"name":"b","state":"running","health":"none"},
-  {"name":"c","state":"running","health":"starting"},
-  {"name":"d","state":"stopped","health":"none"},
-  {"name":"e","state":"failed","health":"unknown"}
-]
-```
-
-Also test that a `collection_timeout` response and a socket dial failure do
-not produce a zero-count success or reuse a prior successful snapshot.

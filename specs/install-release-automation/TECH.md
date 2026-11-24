@@ -2,18 +2,16 @@
 
 ## Context
 
-The product requirements are defined in [PRODUCT.md](PRODUCT.md). The existing rootless status spec promises lifecycle documentation and project automation, but does not fully define their deliverables and assumes a user-installed unit. This focused design supersedes that installation/lifecycle design with the validated system-unit model while retaining the original runtime and protocol design. The current repository has no commits, so stable commit-pinned source links are not yet possible.
+[PRODUCT.md](PRODUCT.md) defines installation and release behavior. The agent uses a system unit that runs as the unprivileged workload owner.
 
 Relevant current files are:
 
-- [`cmd/motd-status-agent/main.go`](../../cmd/motd-status-agent/main.go) contains `serve`, `check`, `install`, and `uninstall`. Its current installer writes a user unit and controls a user manager, which conflicts with this feature’s required system-unit deployment model and must be changed during implementation, not during this spec-only change.
+- [`cmd/motd-status-agent/main.go`](../../cmd/motd-status-agent/main.go) implements the CLI and manages the system unit.
 - [`internal/server/server.go`](../../internal/server/server.go) owns Unix-socket creation and permissions.
-- [`contrib/motd-status-agent.tmpfiles`](../../contrib/motd-status-agent.tmpfiles) is the starting point for boot-persistent `/run/motd-status` provisioning.
-- [`README.md`](../../README.md) contains abbreviated setup instructions that should become a pointer to the authoritative installation guide.
-- [`testdata/v1/status.json`](../../testdata/v1/status.json) and the fixture server provide the agent side of the existing cross-repository protocol test.
-- The sibling `go-motd` repository’s `docs/INSTALL.md`, `.github/workflows/ci.yml`, `.github/workflows/release.yml`, `.github/workflows/publish-release.yml`, release scripts, Release Please configuration, and `scripts/test-status-agent-integration.sh` are the reference patterns. Copy their guarantees, not their unsupported OS matrix or project-specific binary names.
+- [`contrib/motd-status-agent.tmpfiles`](../../contrib/motd-status-agent.tmpfiles) defines runtime directory provisioning.
+- [`INSTALL.md`](../../INSTALL.md) is the operator guide.
 
-## Proposed Changes
+## Implementation
 
 ### Installation and Service Model
 
@@ -29,24 +27,19 @@ Relevant current files are:
 ### `go-motd` Compatibility
 
 - Put the exact `system.container_status` JSON snippet in `INSTALL.md`, with `/var/run/motd-status/agent.sock` and `max_age` aligned with the current consumer schema.
-- Add an agent-side integration entry point that checks out `go-motd` at a repository-pinned tag or full commit SHA into a temporary directory and runs its existing fixture-backed integration harness against the current agent checkout. Do not rely on `../go-motd` in CI.
-- Store the pinned consumer revision in one obvious reviewed location, such as a script constant or text file. Verify the fetched commit exactly before testing.
-- Keep `testdata/v1/status.json` canonical. Any fixture change must pass both agent protocol tests and the pinned consumer test.
 
 ### Local Build Interface
 
-- Add a small `Makefile` or equivalently documented scripts with authoritative targets for formatting/module checks, vet, unit/race tests, vulnerability analysis, workflow validation, Linux cross-builds, compatibility integration, and release packaging.
+- `make check` runs formatting, module consistency, vet, workflow validation, Linux builds, and vulnerability analysis. `make package` creates signed release assets.
 - Ensure local targets and GitHub Actions invoke the same scripts or commands so CI does not define an unrepeatable second build process.
-- Build release commands from `./cmd/motd-status-agent`, with `CGO_ENABLED=0`, `GOOS=linux`, and the selected `GOARCH`, using the patched Go `1.25.13` baseline or newer. Use `-buildvcs=false` and release linker flags for version metadata and stripped output.
+- Build release commands from `./cmd/motd-status-agent`, with `CGO_ENABLED=0`, `GOOS=linux`, and the selected `GOARCH`, using the patched Go `1.27.4` baseline or newer. Use `-buildvcs=false` and release linker flags for version metadata and stripped output.
 
 ### CI Workflow
 
 - Add `.github/workflows/ci.yml`, patterned after `go-motd`:
   - `quality`: formatting, tidy diff, module verification, vet, actionlint, shell syntax, Conventional PR title, and offline internal link checking.
-  - `tests`: race-enabled tests with atomic coverage and a step summary.
   - `builds`: Linux amd64/arm64 matrix using the same release-oriented build command.
   - `vulnerabilities`: binary-mode `govulncheck` with a pinned tool version.
-  - `compatibility`: deterministic checkout and fixture-backed `go-motd` integration.
   - `dependency-review`: PR-only moderate-severity gate.
   - `required`: aggregate result for branch protection.
 - Pin all actions by full commit SHA and retain version comments. Use top-level `contents: read`; grant no write permissions in CI.
@@ -62,31 +55,13 @@ Relevant current files are:
 - Upload with release-scoped `contents: write` only in the publish job. Existing remote assets are downloaded or hashed before deciding whether to skip or fail; never use overwrite semantics.
 - Add maintainer documentation for the GitHub App variables/secrets, signing public-key distribution, release recovery, and key rotation. The install guide must identify how operators obtain the trusted public key before claiming signature verification.
 
-## Testing and Validation
+## Verification
 
-- Documentation command review executes shell snippets in disposable Linux environments where practical and uses `shellcheck` or `bash -n` for extracted scripts. A manual clean-host test covers release/source install, repeated install, boot recreation of `/run/motd-status`, upgrade, rollback, and uninstall (Behavior 1-14, 18-22).
-- A disposable systemd-capable Linux VM test creates separate workload-owner and consumer users, starts a lingering owner manager, installs the system unit, and proves service UID/GID, manager access, socket modes, authorized access, unauthorized denial, and no Podman-socket permission changes (Behavior 2-14, 19, 22).
-- The same environment installs or builds compatible `go-motd`, applies the documented JSON, and verifies terminal, JSON, unavailable-agent, stale-response, empty-list, `healthy`, `none`, and `unknown` behavior (Behavior 15-17).
-- Unit tests cover system-unit rendering, UID-derived environment values, quoting/rejection of unsafe paths, tmpfiles rendering, idempotent file replacement, and uninstall scope. Command fakes assert only system-level service control is used (Behavior 9-13, 20-22).
-- CI is validated with actionlint and shell syntax checks. Pull-request runs demonstrate every job and the aggregate `Required` result; a fork PR demonstrates that no privileged release step runs (Behavior 23-32, 41).
-- Compatibility CI checks out the exact configured `go-motd` revision, runs the real fixture boundary, and intentionally fails for a bad revision and an incompatible fixture (Behavior 30-32).
-- Release scripts are tested locally with an ephemeral Ed25519 key. Tests verify both architectures, static linkage, executable version output, checksum verification, signature verification, stable filenames, no secret output, idempotent identical-asset recovery, and rejection of differing existing assets (Behavior 33-40).
-- A release dry run against a temporary repository verifies Release Please PR creation, immutable-tag checkout, ancestry validation, least-privilege workflow permissions, manual recovery, and fork isolation before enabling canonical publication (Behavior 33-41).
+Exercise the real CLI and Unix-socket endpoint in a disposable environment. Verify packaged binaries, checksums, and the signature before declaring a release ready.
 
 ## Risks and Mitigations
 
 - A system service talking to a user manager can fail when linger or `/run/user/<uid>/bus` is absent. Make these explicit prerequisites, order against `user@<uid>.service`, and verify the endpoint after activation.
 - Shell commands in installation documentation can become unsafe when operators substitute unusual names or paths. Prefer installer flags and validated environment assignments; clearly constrain examples where systemd or tmpfiles escaping would otherwise be ambiguous.
-- Copying `go-motd` release automation wholesale could publish unsupported targets or stale project names. Keep agent artifact lists explicit and test exact filenames.
-- Pinning `go-motd` prevents surprise breakage but can hide compatibility drift. Update the pin through reviewed dependency-style changes and periodically test its latest stable release separately before advancing the required pin.
+- Keep the artifact list explicit so unsupported targets are not published.
 - Signed checksums are useful only if operators have an independently trusted public key. Maintainer and install documentation must define that trust path before describing releases as signature-verified.
-
-## Parallelization
-
-After the product and technical specs are approved, two local agents can work in parallel, followed by one integration pass:
-
-- `agent-install`: owns lifecycle conversion, system unit/tmpfiles behavior, lifecycle tests, `INSTALL.md`, and `README.md`. Local worktree `/home/calmcacil/worktrees/motd-status-agent-install-release`, branch `feat/system-install-docs`.
-- `agent-automation`: owns the Makefile/scripts, CI, Release Please configuration, publishing workflow, release scripts, and automation tests. Local worktree `/home/calmcacil/worktrees/motd-status-agent-automation`, branch `feat/github-automation`.
-- The compatibility integration script is coordinated at merge time because it touches automation while depending on the documented consumer contract. Merge both branches into `feat/install-release-automation`, run all local and VM gates, and submit one combined PR so documentation never advertises unpublished artifacts or an unavailable service model.
-
-The agents must not both edit `README.md`; `agent-install` owns it. `agent-automation` communicates final artifact names, version command syntax, trusted-key location, and required repository settings before the integration pass finalizes `INSTALL.md`.

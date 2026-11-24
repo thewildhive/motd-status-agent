@@ -120,6 +120,9 @@ func (s *Service) handle(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), CollectLimit)
 	defer cancel()
 	workloads, err := s.Collector.Collect(ctx)
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		err = ctxErr
+	}
 	if err != nil {
 		code, status := classifyError(err)
 		writeError(w, code, status)

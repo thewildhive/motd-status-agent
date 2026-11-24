@@ -6,7 +6,7 @@ This document describes the GitHub configuration required by the release workflo
 
 The canonical repository is `thewildhive/motd-status-agent`. The release workflows are guarded so forks and pull requests cannot publish canonical assets.
 
-Configure branch protection for `main` to require the `Required` status from `CI`, along with the repository's normal review requirements. Keep the merge queue enabled only if the repository uses GitHub merge queues.
+Protected `main` accepts squash merges through pull requests after `Required` and `CodeQL` pass. Do not push directly to `main` or bypass the rules.
 
 ## Release Please GitHub App
 
@@ -40,14 +40,10 @@ Operators must obtain and verify that public key before treating `checksums.txt.
 
 ## Release Flow
 
-1. Merge Conventional Commit changes to `main` after CI passes.
+1. Squash-merge a Conventional Commit pull request into `main` after required checks pass.
 2. Release Please opens or updates the release pull request.
 3. Review and merge the release pull request to create the immutable `vMAJOR.MINOR.PATCH` tag and GitHub Release.
 4. Confirm the publish workflow checks out the tag, builds Linux amd64 and arm64 binaries, signs `checksums.txt`, and uploads all four assets.
 5. Verify the published checksums and signature from a clean environment.
 
 If publication is interrupted, manually dispatch `Publish Release` with the existing stable tag. The upload script accepts identical existing assets, uploads missing assets, and refuses differing assets. Never delete or overwrite a published asset to repair a release; publish a new patch release instead.
-
-## Compatibility Pin
-
-The required consumer integration pins a full `go-motd` commit in `scripts/test-status-agent-integration.sh`. Advance `GO_MOTD_REVISION` through a reviewed change and run the compatibility test before merging.

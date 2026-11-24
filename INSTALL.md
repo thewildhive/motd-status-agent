@@ -76,7 +76,7 @@ The checksum manifest verifies artifact integrity. Signature verification requir
 
 ## Build From Source
 
-Use Go `1.25.13` or a newer supported Go release, as declared by `go.mod`:
+Use Go `1.27.4` or a newer supported Go release, as declared by `go.mod`:
 
 ```sh
 git clone https://github.com/thewildhive/motd-status-agent.git
@@ -231,13 +231,3 @@ sudo systemctl daemon-reload
 ```
 
 Uninstall preserves Quadlets, containers, images, volumes, Podman configuration, the access group, group membership, linger, and `go-motd` configuration. Remove those separately only when intentionally decommissioning the workload.
-
-## Development Checks
-
-```sh
-make check
-make test-status-agent-integration
-make cross-compile
-```
-
-See the GitHub Actions workflows for the required pull-request gates and release process.
