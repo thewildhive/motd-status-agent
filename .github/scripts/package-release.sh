@@ -29,21 +29,25 @@ build() {
   local arch="$1"
   CGO_ENABLED=0 GOOS=linux GOARCH="$arch" go build -buildvcs=false -trimpath -ldflags="$ldflags" \
     -o "$output_dir/motd-status-agent-linux-$arch" ./cmd/motd-status-agent
+  CGO_ENABLED=0 GOOS=linux GOARCH="$arch" go build -buildvcs=false -trimpath -ldflags="-s -w" \
+    -o "$output_dir/motd-drive-health-linux-$arch" ./cmd/motd-drive-health
 }
 build amd64
 build arm64
 
-touch -d "@$source_date_epoch" "$output_dir"/motd-status-agent-linux-*
+cp contrib/motd-drive-health.{service,timer} "$output_dir/"
+touch -d "@$source_date_epoch" "$output_dir"/motd-*
 (
   cd "$output_dir"
-  sha256sum motd-status-agent-linux-amd64 motd-status-agent-linux-arm64 > checksums.txt
+  sha256sum motd-drive-health-linux-{amd64,arm64} motd-drive-health.{service,timer} \
+    motd-status-agent-linux-{amd64,arm64} > checksums.txt
 )
 openssl pkeyutl -sign -inkey "$SIGNING_KEY_FILE" -rawin \
   -in "$output_dir/checksums.txt" -out "$output_dir/checksums.txt.sig"
 (
   cd "$output_dir"
   sha256sum --check checksums.txt
-  [[ "$(wc -l < checksums.txt)" -eq 2 ]]
+  [[ "$(wc -l < checksums.txt)" -eq 6 ]]
   [[ "$(wc -c < checksums.txt.sig)" -eq 64 ]]
   host_arch="$(go env GOARCH)"
   "./motd-status-agent-linux-$host_arch" version | grep -Fx "v$version"

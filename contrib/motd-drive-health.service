@@ -1,0 +1,16 @@
+[Unit]
+Description=Collect daily SMART and NVMe drive health
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/usr/local/bin/motd-drive-health
+TimeoutStartSec=6min
+StateDirectory=motd-drive-health
+StateDirectoryMode=0755
+UMask=0022
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateNetwork=yes
+RestrictAddressFamilies=AF_UNIX
