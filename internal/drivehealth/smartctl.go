@@ -16,10 +16,10 @@ import (
 const (
 	smartctlPath = "/usr/sbin/smartctl"
 
-	probeTimeout    = 10 * time.Second
+	probeTimeout     = 10 * time.Second
 	commandWaitDelay = 250 * time.Millisecond
-	maxProbeOutput  = 256 * 1024
-	maxVersionBytes = 64 * 1024
+	maxProbeOutput   = 256 * 1024
+	maxVersionBytes  = 64 * 1024
 
 	// Distinct statuses requested from smartctl's -n standby,STATUS,STATUS2.
 	// Both values include bit 0, which smartctl sets only when the command line

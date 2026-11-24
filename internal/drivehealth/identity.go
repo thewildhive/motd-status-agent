@@ -12,12 +12,12 @@ import (
 )
 
 const (
-	byIDDir          = "/dev/disk/by-id"
-	sysClassBlockDir = "/sys/class/block"
-	sysClassNVMeDir  = "/sys/class/nvme"
+	byIDDir            = "/dev/disk/by-id"
+	sysClassBlockDir   = "/sys/class/block"
+	sysClassNVMeDir    = "/sys/class/nvme"
 	sysClassATAPortDir = "/sys/class/ata_port"
-	devDir           = "/dev"
-	maxSysfsBytes    = 4096
+	devDir             = "/dev"
+	maxSysfsBytes      = 4096
 )
 
 type resolvedDevice struct {
