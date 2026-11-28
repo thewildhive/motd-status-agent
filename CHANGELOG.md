@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/thewildhive/motd-status-agent/compare/v0.4.0...v0.4.1) (2026-11-28)
+
+
+### Bug Fixes
+
+* **discovery:** bound parallel Quadlet inspections ([#11](https://github.com/thewildhive/motd-status-agent/issues/11)) ([16d679a](https://github.com/thewildhive/motd-status-agent/commit/16d679a531675d713fbe9a7f9b7bc1bdb90caabb)), closes [#10](https://github.com/thewildhive/motd-status-agent/issues/10)
+
 ## [0.4.0](https://github.com/thewildhive/motd-status-agent/compare/v0.3.1...v0.4.0) (2026-11-24)
 
 
