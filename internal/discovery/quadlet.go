@@ -12,12 +12,15 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 
 	"motd-status-agent/internal/protocol"
 )
 
 var ErrRuntimeUnavailable = errors.New("podman runtime unavailable")
 var ErrPermissionDenied = errors.New("permission denied")
+
+const inspectionWorkers = 8
 
 type Collector struct {
 	Home       string
@@ -35,17 +38,37 @@ func (c Collector) Collect(ctx context.Context) ([]protocol.Workload, error) {
 	if _, err := exec.LookPath(c.Podman); err != nil {
 		return nil, ErrRuntimeUnavailable
 	}
+	jobs := make(chan int)
+	var workers sync.WaitGroup
+	for range min(inspectionWorkers, len(definitions)) {
+		workers.Add(1)
+		go func() {
+			defer workers.Done()
+			for i := range jobs {
+				if ctx.Err() != nil {
+					return
+				}
+				members, inspectErr := c.inspect(ctx, definitions[i])
+				if inspectErr != nil {
+					// Enumeration succeeded, so retain the workload instead of hiding it.
+					members = []Member{{Name: definitions[i].Name, State: protocol.StateUnknown, Health: protocol.HealthUnknown}}
+				}
+				definitions[i].Members = members
+			}
+		}()
+	}
+dispatch:
 	for i := range definitions {
-		if err := ctx.Err(); err != nil {
-			return nil, err
+		select {
+		case jobs <- i:
+		case <-ctx.Done():
+			break dispatch
 		}
-		members, inspectErr := c.inspect(ctx, definitions[i])
-		if inspectErr != nil {
-			// Enumeration succeeded, so retain the workload instead of hiding it.
-			definitions[i].Members = []Member{{Name: definitions[i].Name, State: protocol.StateUnknown, Health: protocol.HealthUnknown}}
-			continue
-		}
-		definitions[i].Members = members
+	}
+	close(jobs)
+	workers.Wait()
+	if err := ctx.Err(); err != nil {
+		return nil, err
 	}
 	result := make([]protocol.Workload, 0, len(definitions))
 	for _, definition := range definitions {
